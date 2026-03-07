@@ -101,10 +101,8 @@ if use_postgres:
 
 # Load portfolio data or create an empty DataFrame
 def load_portfolio():
-    if not myportfolio.empty:
-        myportfolio['date'] = pd.to_datetime(myportfolio['date'], errors='coerce')
-    if not df_transformed.empty:
-        df_transformed['date'] = pd.to_datetime(df_transformed['date'], errors='coerce')
+    myportfolio['date'] = pd.to_datetime(myportfolio['date'], errors='coerce')
+    df_transformed['date'] = pd.to_datetime(df_transformed['date'], errors='coerce')
         
     merged_df = pd.merge(myportfolio, df_transformed[['symbol', 'date', 'close']], on=['symbol', 'date'], how='left')
     merged_df.rename(columns={'close': 'price'}, inplace=True)
