@@ -33,6 +33,8 @@ if not myportfolio.empty:
                 .groupby('symbol', as_index=False)                              
                 .apply(lambda df: pd.Series({'net_quantity': df.loc[df['transaction_type'] == 'buy', 'quantity'].sum() - df.loc[df['transaction_type'] == 'sell', 'quantity'].sum()}))
                 .query('net_quantity != 0') )  # Keep only symbols with non-zero net quantity  
+else:
+    myportfolio_summarized = pd.DataFrame(columns=['symbol', 'net_quantity'])
 
 # st.dataframe(myportfolio_summarized)
 
