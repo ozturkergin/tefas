@@ -2,7 +2,14 @@
 echo =======================================================
 echo 🚀 Starting Docker containers...
 echo =======================================================
-docker-compose up -d
+docker compose version >nul 2>&1
+IF %ERRORLEVEL% EQU 0 (
+    set COMPOSE_CMD=docker compose
+) ELSE (
+    set COMPOSE_CMD=docker-compose
+)
+
+%COMPOSE_CMD% up -d --build
 
 echo.
 echo ⏳ Waiting for PostgreSQL to initialize (15 seconds)...
