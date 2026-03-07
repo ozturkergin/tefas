@@ -74,8 +74,12 @@ if use_postgres:
     df_gold['GOLD'] = df_gold['GOLD'].fillna(method='ffill')
 
     symbols = myportfolio['symbol'].dropna().unique()
-    symbol_list = ','.join(f"'{s}'" for s in symbols)
-    filter_cond = f"symbol IN ({symbol_list})"
+    if len(symbols) == 0:
+        filter_cond = "1=0"
+    else:
+        symbol_list = ','.join(f"'{s}'" for s in symbols)
+        filter_cond = f"symbol IN ({symbol_list})"
+    
     if date_filter:
         filter_cond += f" AND {date_filter}"
     df_transformed = read_table('tefas_transformed', parse_dates=['date'], filter_condition=filter_cond)
