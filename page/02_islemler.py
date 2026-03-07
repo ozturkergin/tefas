@@ -1,0 +1,126 @@
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime
+from page.utils import read_table
+
+df_fon_table = read_table('tefas_funds', parse_dates=None)
+
+if df_fon_table.empty:
+    st.stop()
+
+if 'prompt_number_of_lines' in st.session_state :
+    prompt_number_of_lines = st.session_state.prompt_number_of_lines  
+else : 
+    prompt_number_of_lines = 10
+
+unique_symbols = sorted(df_fon_table['symbol'].unique().tolist())
+
+PORTFOLIO_FILE = f"data/myportfolio_{st.session_state["remembered_user"]}.csv"
+FAVOURITES_FILE = f"data/favourites_{st.session_state["remembered_user"]}.csv"
+
+# Define a function to load portfolio data or create an empty DataFrame
+def load_portfolio():
+    if 'myportfolio' in st.session_state:
+        return_df = st.session_state.myportfolio.copy()
+    elif os.path.exists(PORTFOLIO_FILE):
+        return_df = pd.read_csv(PORTFOLIO_FILE, parse_dates=['date'])  # Load portfolio data
+    else:
+        return_df = pd.DataFrame()
+
+    if not return_df.empty:
+        symbols = return_df['symbol'].dropna().unique().copy()
+        symbol_list = ','.join(f"'{s}'" for s in symbols)
+        filter_cond = f"symbol IN ({symbol_list})"
+        df_transformed = read_table('tefas_transformed', parse_dates=['date'], filter_condition=filter_cond)
+        return_df['quantity'] = pd.to_numeric(return_df['quantity'], errors='coerce').fillna(0).astype(int) # Fill missing values in 'quantity' column with 0 before casting to integer
+        return_df['tax_ratio'] = pd.to_numeric(return_df['tax_ratio'], errors='coerce').fillna(0).astype('double') # Fill missing values in 'tax_ratio' column with 0 before casting to integer
+        
+        # Merge portfolio with tefas price data on 'symbol' and 'date'
+        merged_df = pd.merge(return_df, df_transformed[['symbol', 'date', 'close']], on=['symbol', 'date'], how='left')
+        merged_df.rename(columns={'close': 'price'}, inplace=True)
+        return merged_df, df_transformed
+    else:
+        # Create an empty DataFrame with predefined columns
+        df_transformed = read_table('tefas_transformed', parse_dates=['date'])
+        df_transformed = df_transformed.sort_values(by=['date', 'symbol'])
+        return pd.DataFrame(columns=['symbol', 'date', 'transaction_type', 'quantity', 'price', 'tax_ratio']), df_transformed
+
+df_portfolio, df_transformed = load_portfolio()
+df_portfolio = df_portfolio[df_portfolio.quantity != 0]
+
+if df_portfolio.empty:  # Check if the portfolio is empty and set up initial DataFrame
+    df_portfolio = pd.DataFrame({"symbol": [""], "date": [datetime.today().date()], "transaction_type": [""], "quantity": [0], "price": [0], "tax_ratio": [0.000],})
+
+empty_row = pd.DataFrame({"symbol": [""], "date": [""], "transaction_type": [""], "quantity": [0], "price": [0], "tax_ratio": [0.000],})
+for _ in range(prompt_number_of_lines): # Add five extra empty lines if the portfolio is not empty
+    df_portfolio.reset_index(inplace=True, drop=True)
+    df_portfolio = pd.concat([df_portfolio, empty_row], ignore_index=True)
+
+def calculate_basari_delta(row):
+    symbol = row['symbol']
+    recent_data = df_transformed[df_transformed['symbol'] == symbol].sort_values('date')
+    if not recent_data.empty:
+        most_recent_price = recent_data['close'].iloc[-1]
+        most_recent_date = recent_data['date'].iloc[-1]
+        price_change = (most_recent_price - row['price']) / row['price']
+        days_difference = (most_recent_date - row['date']).days
+        if days_difference > 0:
+            yearly_adjusted_change = (price_change * 365) / days_difference
+            return yearly_adjusted_change * 100  # Convert to percentage
+    return None
+
+# Apply the calculation
+df_portfolio['Başarı Δ'] = df_portfolio.apply(calculate_basari_delta, axis=1)
+df_portfolio['amount'] = df_portfolio['quantity'] * df_portfolio['price']
+
+# Ensure the date column is treated as datetime for the data editor
+df_portfolio['date'] = pd.to_datetime(df_portfolio['date'], errors='coerce')
+
+# Set up column configuration
+column_config = {
+    "symbol": st.column_config.SelectboxColumn("Fon", help="Stock symbol", options=unique_symbols),
+    "date": st.column_config.DateColumn("Tarih", help="Transaction date"),  # Proper date column
+    "transaction_type": st.column_config.SelectboxColumn("İşlem", options=["buy", "sell"], help="Select buy or sell"),
+    "quantity": st.column_config.NumberColumn("Miktar", help="Number of shares", min_value=1, step=1),
+    "amount": st.column_config.NumberColumn("Tutar", help="Transaction Amount", min_value=0.0, format="₺ %.2f"),
+    "Başarı Δ": st.column_config.NumberColumn("Başarı Δ", help="Yearly adjusted price change", min_value=0.0, format="%.2f %%"),
+    "tax_ratio": st.column_config.NumberColumn("Stopaj", help="Stoppage Amount", min_value=0.0, format="%.3f"),
+}
+
+col2, col3 = st.columns([3, 1])
+
+with col2:
+    st.title("İşlemler")
+
+    # Wrap data editor and save button in a form
+    with st.form(key="portfolio_form"):
+        # Display data editor within the form
+        prompt_number_of_lines = st.number_input("Boş Satır Sayısı:", min_value=0, step=1, value=prompt_number_of_lines)
+        st.session_state.prompt_number_of_lines = prompt_number_of_lines
+
+        save_button = st.form_submit_button("Sakla") # Submit button
+
+        dataframe_height = (len(df_portfolio) + 1) * 35 + 2
+        df_portfolio = df_portfolio.sort_values(by=['date', 'symbol'])
+        edited_df = st.data_editor(df_portfolio, column_config=column_config, hide_index=True, height=dataframe_height)
+        edited_df = edited_df[edited_df['symbol'] != ""]
+        
+        if save_button: # Check if save button is clicked
+            # Convert date column back to datetime
+            edited_df['date'] = pd.to_datetime(edited_df['date'], errors='coerce')
+            columns_to_save = ['symbol', 'date', 'transaction_type', 'quantity', 'tax_ratio']
+            myportfolio = edited_df[columns_to_save]
+
+            if not edited_df.empty:
+                myportfolio.to_csv(PORTFOLIO_FILE, index=False) # Save to CSV
+                myportfolio['quantity'] = pd.to_numeric(myportfolio['quantity'], errors='coerce').fillna(0).astype(int)
+                myportfolio['tax_ratio'] = pd.to_numeric(myportfolio['tax_ratio'], errors='coerce').fillna(0).astype('double')
+                myportfolio['date'] = pd.to_datetime(myportfolio['date'], errors='coerce')  # Convert date to datetime
+                myportfolio = myportfolio[myportfolio.quantity != 0]
+                st.session_state.myportfolio = myportfolio
+                st.success("Portfolio saved successfully!")
+            else:
+                st.warning("No valid entries to save.")
+            
+            st.rerun()

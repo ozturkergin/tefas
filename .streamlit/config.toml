@@ -1,0 +1,7 @@
+[server]
+headless = true 
+port = 5002
+
+[theme]
+base = "dark"
+font = "monospace"
