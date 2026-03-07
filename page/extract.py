@@ -7,7 +7,7 @@ import traceback
 import argparse
 import yfinance as yf
 import warnings
-
+import os
 from datetime import datetime, timedelta, date
 from typing import Dict, List, Optional, Union
 from marshmallow import Schema, fields, EXCLUDE, pre_load, post_load
@@ -377,8 +377,8 @@ def main():
         # is_docker = os.getenv("IS_DOCKER", "false").lower() == "true"
         # hostname = "postgres_db" if is_docker else "localhost"
         hostname = os.getenv("POSTGRES_HOST", "postgres_db")
-        user = os.getenv("POSTGRES_USER", "postgres")
-        password = os.getenv("POSTGRES_PASSWORD", "postgres")
+        user = os.getenv("POSTGRES_USER", "tefas")
+        password = os.getenv("POSTGRES_PASSWORD", "tefas")
         db = os.getenv("POSTGRES_DB", "tefas_db")
         port = os.getenv("POSTGRES_PORT", "5432")
         
