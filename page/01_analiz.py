@@ -177,8 +177,7 @@ lv_time_range = st.session_state.filter_label
 
 column_configuration_fon = {
     "Portföy"             : st.column_config.TextColumn("Portföyde", help="Portföyde Var mı?", width="small"),
-    "symbollink"          : st.column_config.LinkColumn("Link", help="Link", display_text=r"https://www\.tefas\.gov\.tr/FonAnaliz\.aspx\?FonKod=(.*)", width="small"),
-    "symbol"              : st.column_config.TextColumn("Fon", help="Fon Kodu", width="small"),
+    "symbol"              : st.column_config.LinkColumn("Fon", help="Fon Kodu", display_text=r"https://www\.tefas\.gov\.tr/FonAnaliz\.aspx\?FonKod=(.*)", width="small"),
     "title"               : st.column_config.TextColumn("Unvan", help="Fonun Ünvanı", width="large"),
     f'Skor'               : st.column_config.NumberColumn(f'Skor', help="Sıralama", width="small"),
     f'{lv_time_range}-F%' : st.column_config.NumberColumn(f'{lv_time_range}-F%', help="Fiyat değişimi yüzdesi", width="small"),
@@ -291,7 +290,7 @@ with col2:
             # df_symbol_metrics["Skor"] = ( weighted_sum / weights_sum )
             portfolio_symbols = set(myportfolio_summarized['symbol'].unique())
             df_symbol_metrics["Portföy"] = df_symbol_metrics["symbol"].apply(lambda s: "⭐" if s in portfolio_symbols else "")
-            df_symbol_metrics["symbollink"] = "https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=" + df_symbol_metrics["symbol"]
+            df_symbol_metrics["symbol"] = "https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=" + df_symbol_metrics["symbol"]
  
             styled_df = df_symbol_metrics.style
             styled_df = styled_df.format({f'{lv_time_range}-F%': '{:.2f}', 
@@ -317,6 +316,7 @@ with col2:
                 set_filtered_symbols.clear()
                 for selected_symbol_index in selectable_symbols.selection.rows:
                     selected_symbol = df_symbol_metrics.iloc[selected_symbol_index]['symbol']
+                    selected_symbol = selected_symbol.replace("https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=", "")
                     set_filtered_symbols.add(selected_symbol)
                     
 with col3:
