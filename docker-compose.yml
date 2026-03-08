@@ -2,9 +2,9 @@ version: '3.8'
 name: tefas
 
 services:
-  postgres_db:
+  tefas_postgres:
     image: postgres:15
-    container_name: postgres_db
+    container_name: tefas_postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=tefas
@@ -29,13 +29,13 @@ services:
       - LANG=tr_TR.UTF-8
       - LANGUAGE=tr_TR.UTF-8
       - LC_ALL=tr_TR.UTF-8
-      - POSTGRES_HOST=postgres_db
+      - POSTGRES_HOST=tefas_postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=tefas_db
       - POSTGRES_USER=tefas
       - POSTGRES_PASSWORD=tefas
     depends_on:
-      - postgres_db
+      - tefas_postgres
     networks:
       - my-net
     volumes:

@@ -375,8 +375,8 @@ def main():
 
     def db_engine():
         # is_docker = os.getenv("IS_DOCKER", "false").lower() == "true"
-        # hostname = "postgres_db" if is_docker else "localhost"
-        hostname = os.getenv("POSTGRES_HOST", "postgres_db")
+        # hostname = "tefas_postgres" if is_docker else "localhost"
+        hostname = os.getenv("POSTGRES_HOST", "tefas_postgres")
         user = os.getenv("POSTGRES_USER", "tefas")
         password = os.getenv("POSTGRES_PASSWORD", "tefas")
         db = os.getenv("POSTGRES_DB", "tefas_db")

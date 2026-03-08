@@ -98,7 +98,7 @@ if "use_postgres" not in st.session_state:
     st.session_state["use_postgres"] = config.get("use_postgres", True)
 
 if "POSTGRES_HOST" not in st.session_state:
-    st.session_state["POSTGRES_HOST"] = os.getenv("POSTGRES_HOST", "postgres_db")
+    st.session_state["POSTGRES_HOST"] = os.getenv("POSTGRES_HOST", "tefas_postgres")
 if "POSTGRES_PORT" not in st.session_state:
     st.session_state["POSTGRES_PORT"] = os.getenv("POSTGRES_PORT", "5432")
 if "POSTGRES_DB" not in st.session_state:
