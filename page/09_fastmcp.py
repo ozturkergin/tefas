@@ -77,20 +77,7 @@ for symbol in df_changes['symbol'].unique():
     df_changes_recent["bb_upper"] = bb_up
     df_changes_recent["bb_lower"] = bb_lo
 
-#     indicator_rows.append(
-# f'| {symbol} \
-# | {df_changes_recent["1 Day % Change"].iloc[0].round(4)} \
-# | {df_changes_recent["7 Day % Change"].iloc[0].round(4)} \
-# | {df_changes_recent["30 Day % Change"].iloc[0].round(4)} \
-# | {df_changes_recent["90 Day % Change"].iloc[0].round(4)} \
-# | {df_changes_recent["180 Day % Change"].iloc[0].round(4)} \
-# | {df_changes_recent["1 Year % Change"].iloc[0].round(4)} \
-# | {df_changes_recent["3 Years % Change"].iloc[0].round(4)} \
-# | {rsi_val} | {ema_val} | {bb_up} | {bb_lo} |'
-#     )
-
-    indicator_rows.append(
-f'{symbol}\
+    row_str = f'{symbol}\
 ,{df_changes_recent["1 Day % Change"].iloc[0].round(4)}\
 ,{df_changes_recent["7 Day % Change"].iloc[0].round(4)}\
 ,{df_changes_recent["30 Day % Change"].iloc[0].round(4)}\
@@ -98,7 +85,10 @@ f'{symbol}\
 ,{df_changes_recent["180 Day % Change"].iloc[0].round(4)}\
 ,{df_changes_recent["1 Year % Change"].iloc[0].round(4)}\
 ,{df_changes_recent["3 Years % Change"].iloc[0].round(4)}\
-,{rsi_val},{ema_val},{bb_up},{bb_lo}')
+,{rsi_val},{ema_val},{bb_up},{bb_lo}'
+
+    if "nan" not in row_str.lower() and "none" not in row_str.lower():
+        indicator_rows.append(row_str)
 
 indicator_table = "\n".join([table_header] + indicator_rows)
 
@@ -110,7 +100,7 @@ You are a seasoned financial analyst specialized in Turkish mutual funds (fon).
 Using the table below, recommend the **top 10 best performing fund symbol** to invest.
 Respond **exactly** in the following format:
 
-Recommended Symbol(s): <symbol>
+Recommended Symbol(s): <Symbol>
 Reason: <short, max 3 sentences justification>
 Make sure to consider both short-term and long-term performance, as well as technical indicators like RSI, EMA, and Bollinger Bands.
 
@@ -124,7 +114,7 @@ The RSI, EMA, and Bollinger Bands are the most recent values.
 # ------------------------------------------------------------------
 # 4️⃣  UI – allow the user to tweak the prompt
 # ------------------------------------------------------------------
-st.markdown("#### Ask LLM for Fund Selection")
+st.markdown("#### Ask Local LLM for Fund Selection")
 
 # Optional: let the user pick which Ollama model and host to use
 col1, col2 = st.columns(2)
