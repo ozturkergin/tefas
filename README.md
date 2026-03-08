@@ -25,7 +25,7 @@ cd tefas
 The authentication logic reads from `data/users.csv`. By default, you'll need to create this locally inside the `data/` folder, adding credentials for you to access the dashboard:
 ```csv
 username,password
-admin,your_secure_password
+admin,Tefas
 ```
 
 ### 3. Quickstart Initializing Sequence 
@@ -57,6 +57,13 @@ Once the terminal notifies you the setup is complete, navigate to:
 * **Analytics**: Pandas, Plotly, Pandas-TA
 * **Storage**: Remote PostgreSQL Database Engine Instance
 * **Data Sources**: Internal web scraping logic combined directly with Yahoo Finance for FX equivalents.
+
+### Port Configuration
+By default, the Docker containers are mapped to the following ports on your host machine:
+- **`5002`**: The main Streamlit Web Application (`localhost:5002`).
+- **`5433`**: The PostgreSQL Database (`localhost:5433`). 
+
+*Note: The database is intentionally mapped to custom port `5433` (instead of the standard `5432`) to prevent conflicts if you already have a native PostgreSQL instance running on your machine. You can connect to this isolated database using any SQL Client (like pgAdmin or DBeaver) using `localhost`, port `5433`, username `tefas`, and password `tefas`.*
 
 ---
 
