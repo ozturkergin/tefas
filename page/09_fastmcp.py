@@ -126,8 +126,24 @@ The RSI, EMA, and Bollinger Bands are the most recent values.
 # ------------------------------------------------------------------
 st.markdown("#### Ask LLM for Fund Selection")
 
-# Optional: let the user pick which Ollama model to use
-model_name = st.text_input("Ollama model name", value="gpt-oss:latest")
+# Optional: let the user pick which Ollama model and host to use
+col1, col2 = st.columns(2)
+with col1:
+    ollama_preset = st.selectbox(
+        "Ollama Host Configuration", 
+        [
+            "http://host.docker.internal:11434 (Docker Default)", 
+            "http://localhost:11434 (Local Node)", 
+            "Custom URL"
+        ]
+    )
+    if ollama_preset == "Custom URL":
+        ollama_host = st.text_input("Custom Ollama Host", value="http://192.168.1.X:11434")
+    else:
+        ollama_host = ollama_preset.split(" ")[0]
+
+with col2:
+    model_name = st.text_input("Ollama Model Name", value="gpt-oss:latest")
 
 # Text area that shows the default prompt but is fully editable
 user_prompt = st.text_area(
@@ -143,7 +159,7 @@ user_prompt = st.text_area(
 if st.button("Ask LLM for Fund Selection"):
     with st.spinner("LLM is analyzing…"):
         try:
-            client = ollama.Client(host='http://host.docker.internal:11434')
+            client = ollama.Client(host=ollama_host)
             response = client.chat(
                 model=model_name,
                 messages=[{"role": "user", "content": user_prompt}]
