@@ -267,12 +267,12 @@ with col2:
             df_symbol_metrics["RSI_14"] = df_symbol_history[f'RSI_14'] 
             # Calculate the weighted score
             weighted_sum = (
-                df_symbol_history['7d-Rank'] * weights['7d'] +
-                df_symbol_history['1m-Rank'] * weights['1m'] +
-                df_symbol_history['3m-Rank'] * weights['3m'] +
-                df_symbol_history['6m-Rank'] * weights['6m'] +
-                df_symbol_history['1y-Rank'] * weights['1y'] +
-                df_symbol_history['3y-Rank'] * weights['3y']
+                df_symbol_history['7d-Rank'].fillna(0) * weights['7d'] +
+                df_symbol_history['1m-Rank'].fillna(0) * weights['1m'] +
+                df_symbol_history['3m-Rank'].fillna(0) * weights['3m'] +
+                df_symbol_history['6m-Rank'].fillna(0) * weights['6m'] +
+                df_symbol_history['1y-Rank'].fillna(0) * weights['1y'] +
+                df_symbol_history['3y-Rank'].fillna(0) * weights['3y']
             )
 
             # Calculate the sum of weights for non-null values
