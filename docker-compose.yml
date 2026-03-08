@@ -6,6 +6,8 @@ services:
     image: postgres:15
     container_name: tefas_postgres
     restart: unless-stopped
+    ports:
+      - "5433:5432"
     environment:
       - POSTGRES_USER=tefas
       - POSTGRES_PASSWORD=tefas
