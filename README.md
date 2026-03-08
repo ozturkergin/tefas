@@ -65,6 +65,9 @@ By default, the Docker containers are mapped to the following ports on your host
 
 *Note: The database is intentionally mapped to custom port `5433` (instead of the standard `5432`) to prevent conflicts if you already have a native PostgreSQL instance running on your machine. You can connect to this isolated database using any SQL Client (like pgAdmin or DBeaver) using `localhost`, port `5433`, username `tefas`, and password `tefas`.*
 
+**Changing Default Ports:** 
+If ports `5002` or `5433` are already in use on your machine, you can change them seamlessly in the `docker-compose.yml` file. Local host mappings are listed to the *left* of the colons under the `ports:` sections. For instance, `ports: - "8080:5002"` would expose the dashboard locally on port `8080`.
+
 ---
 
 ## ⚙️ Administration Commands
