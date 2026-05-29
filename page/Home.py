@@ -30,6 +30,9 @@ df_transformed = read_table('tefas_transformed', parse_dates=['date'], filter_co
 def fetch_todays_data(recent_date, prev_date):
     summary_recent = pd.DataFrame(columns=['Fon Unvan Türü', 'symbol', 'market_cap'])  # Initialize as empty DataFrame
 
+    if df_transformed.empty or df_fon_table.empty:
+        return summary_recent, [], recent_date, prev_date
+
     recent_date_adj = df_transformed[df_transformed['date'] <= recent_date]['date'].max()
     # Separate data for recent_date and prev_date
     df_transformed_recent = df_transformed[df_transformed['date'] == recent_date_adj]
@@ -55,6 +58,8 @@ def fetch_todays_data(recent_date, prev_date):
             continue
 
         filtered_recent = df_transformed_recent[df_transformed_recent[attribute_col] == True].copy()
+        if filtered_recent.empty:
+            continue
         filtered_recent.loc[:, "Fon Unvan Türü"] = attribute
         filtered_prev = df_transformed_prev[df_transformed_prev[attribute_col] == True]
         amount_t = filtered_recent['market_cap'].sum()
@@ -93,14 +98,17 @@ col1, col2, col3 = st.columns([6, 1, 7])
 with col1:
     with st.container():
         df_summary = pd.DataFrame(data_fon_turu_summary)
-        styled_df = df_summary.style
-        recent_date_str = datetime.strftime(recent_date, "%Y-%m-%d")
-        prev_date_str = datetime.strftime(prev_date, "%Y-%m-%d")
-        styled_df = styled_df.format({f'{recent_date_str}': '₺ {:,.0f}', 
-                                      f'{prev_date_str}': '₺ {:,.0f}', 
-                                      f'Δ': '₺ {:,.0f}' , 
-                                      f'Δ %': '% {:,.4f}'})
-        st.dataframe(styled_df, hide_index=True, height=dataframe_height)
+        if not df_summary.empty:
+            styled_df = df_summary.style
+            recent_date_str = datetime.strftime(recent_date, "%Y-%m-%d")
+            prev_date_str = datetime.strftime(prev_date, "%Y-%m-%d")
+            styled_df = styled_df.format({f'{recent_date_str}': '₺ {:,.0f}', 
+                                          f'{prev_date_str}': '₺ {:,.0f}', 
+                                          f'Δ': '₺ {:,.0f}' , 
+                                          f'Δ %': '% {:,.4f}'})
+            st.dataframe(styled_df, hide_index=True, height=dataframe_height)
+        else:
+            st.info("Veri bulunamadı. Lütfen entegrasyon sayfasından verileri çekin.")
 
 with col2:
     with st.container():
@@ -215,22 +223,25 @@ with col2:
                 st.metric(label="Earlier GOLD:", value="N/A")
 
 with col3:
-        treemap_data = pd.DataFrame({
-             'names': summary_recent['symbol'],
-             'parents': summary_recent['Fon Unvan Türü'],
-             'values': summary_recent['market_cap']
-         })
- 
-        treemap_data = treemap_data[treemap_data['values'] > 0]  # Remove negative values
- 
-        fig = px.treemap(
-             treemap_data,
-             path=['parents', 'names'],  # Path to the names
-             values='values',
-             color='values',  # Color by the values to show increase or decrease
-             color_continuous_scale='RdYlGn',  # Red for negative, green for positive
-             # title="Market Cap Treemap",
-             height=dataframe_height, 
-             )
- 
-        st.plotly_chart(fig) # Display the treemap next to the DataFrame
+        if not summary_recent.empty:
+            treemap_data = pd.DataFrame({
+                 'names': summary_recent['symbol'],
+                 'parents': summary_recent['Fon Unvan Türü'],
+                 'values': summary_recent['market_cap']
+             })
+     
+            treemap_data = treemap_data[treemap_data['values'] > 0]  # Remove negative values
+     
+            fig = px.treemap(
+                 treemap_data,
+                 path=['parents', 'names'],  # Path to the names
+                 values='values',
+                 color='values',  # Color by the values to show increase or decrease
+                 color_continuous_scale='RdYlGn',  # Red for negative, green for positive
+                 # title="Market Cap Treemap",
+                 height=dataframe_height, 
+                 )
+     
+            st.plotly_chart(fig) # Display the treemap next to the DataFrame
+        else:
+            st.info("Treemap için veri bulunamadı.")

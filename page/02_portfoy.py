@@ -458,7 +458,13 @@ if summary_rows:
     df_summary['FundType'] = df_summary[fund_types].idxmax(axis=1).str.replace('FundType_', '')
     
     Umbrellafund_types = [col for col in df_fon_table.columns if col.startswith('UmbrellaFundType_')]
-    df_summary['UmbrellaFundType'] = df_summary[Umbrellafund_types].idxmax(axis=1).str.replace('UmbrellaFundType_', '')
+    if Umbrellafund_types:
+        df_summary['UmbrellaFundType'] = df_summary[Umbrellafund_types].idxmax(axis=1).str.replace('UmbrellaFundType_', '').fillna('Diğer')
+    else:
+        df_summary['UmbrellaFundType'] = 'Diğer'
+
+    df_summary['FundType'] = df_summary['FundType'].fillna('Diğer').replace('', 'Diğer')
+    df_summary['UmbrellaFundType'] = df_summary['UmbrellaFundType'].fillna('Diğer').replace('', 'Diğer')
     
     col1, col2, col3 = st.columns([6, 6, 10])
     

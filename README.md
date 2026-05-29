@@ -78,7 +78,7 @@ docker-compose up -d --build
 
 If you ever need to manually force the python extract scripts to update your tables with newest data limits or compute missing indicators outside the web interface:
 ```bash
-docker exec tefas python3 page/extract.py --tefas_price true --calculate_indicators true --tefas_fundtype true --timedelta 365
+docker exec tefas python3 page/extract_new.py --tefas_price true --calculate_indicators true --tefas_fundtype true --timedelta 365
 ```
 
 ## 📜 Repository Maintainers

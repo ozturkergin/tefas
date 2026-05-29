@@ -1,12 +1,13 @@
 import streamlit as st
 import subprocess
 import os
+import pandas as pd
 
 def run_extract_script(tefas_price, calculate_indicators, tefas_fundtype, timedelta):
     # Construct the command with all required arguments
     command = [
         "python3",
-        "page/extract.py",
+        "page/extract_new.py",
         f"--tefas_price={'true' if tefas_price else 'false'}",
         f"--calculate_indicators={'true' if calculate_indicators else 'false'}",
         f"--tefas_fundtype={'true' if tefas_fundtype else 'false'}",
@@ -30,7 +31,7 @@ def run_extract_script(tefas_price, calculate_indicators, tefas_fundtype, timede
 
 # Streamlit interface
 st.title("Run Extract Script")
-st.write("Configure arguments for page/extract.py")
+st.write("Configure arguments for page/extract_new.py")
 
 # Form for arguments
 with st.form("extract_form"):
@@ -51,6 +52,15 @@ with st.form("extract_form"):
         if stderr:
             st.error("Script Errors:")
             st.code(stderr, language="text")
+
+        # Display the ingested funds category mapping table if requested and exists
+        if tefas_fundtype and os.path.exists("data/last_fon_table.csv"):
+            try:
+                st.subheader("Ingested Funds Categorization (tefas_funds)")
+                df_fon = pd.read_csv("data/last_fon_table.csv")
+                st.dataframe(df_fon, use_container_width=True)
+            except Exception as e:
+                st.warning(f"Could not load ingested funds table: {e}")
     
         st.cache_data.clear()
         st.session_state.clear()

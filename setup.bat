@@ -18,7 +18,7 @@ timeout /t 15 /nobreak >nul
 echo.
 echo 📥 Running initial data extraction to populate the database tables...
 echo This might take a few minutes as it downloads TEFAS prices, FX and Gold rates, and calculates indicators for the last year...
-docker exec tefas python3 page/extract.py --tefas_price true --calculate_indicators true --tefas_fundtype true --timedelta 365
+docker exec tefas python3 page/extract_new.py --tefas_price true --calculate_indicators true --tefas_fundtype true --timedelta 365
 
 echo.
 echo =======================================================
