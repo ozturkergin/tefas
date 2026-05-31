@@ -57,10 +57,12 @@ if "remembered_user" not in st.session_state:
 # Login form if not authenticated
 if not st.session_state["authenticated"]:
     st.title("Giriş Yap")
-    username = st.text_input("Kullanıcı Adı", value=st.session_state["remembered_user"] or "")
-    password = st.text_input("Şifre", type="password")
+    with st.form("login_form", border=False):
+        username = st.text_input("Kullanıcı Adı", value=st.session_state["remembered_user"] or "")
+        password = st.text_input("Şifre", type="password")
+        submit_button = st.form_submit_button("Giriş")
 
-    if st.button("Giriş"):
+    if submit_button:
         if check_credentials(username, password):
             st.session_state["authenticated"] = True
             st.session_state["remembered_user"] = username
