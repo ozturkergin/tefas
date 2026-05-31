@@ -62,5 +62,15 @@ with st.form("extract_form"):
             except Exception as e:
                 st.warning(f"Could not load ingested funds table: {e}")
     
+        # Display the first fund's dates and prices if requested and exists
+        if tefas_price and os.path.exists("data/first_fund_prices.csv"):
+            try:
+                df_first = pd.read_csv("data/first_fund_prices.csv")
+                if not df_first.empty:
+                    st.subheader(f"First Fund Dates and Prices (Total: {df_first.shape[0]} days)")
+                    st.dataframe(df_first, use_container_width=True)
+            except Exception as e:
+                st.warning(f"Could not load first fund prices table: {e}")
+
         st.cache_data.clear()
         st.session_state.clear()

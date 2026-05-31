@@ -193,37 +193,91 @@ class tefas_get:
         return unique_categories
 
     def fetch_info(self, FundType, UmbrellaFundType, start_date_initial, end_date_initial):
-        # The old HTML/form-based pagination is retired. Use the new per-fund
-        # JSON API and fan-out by fund code. Keep the same public signature
-        # but ignore FundType/UmbrellaFundType filters (they're not provided
-        # by the new endpoints) — we still return any available FundType
-        # fields if present in the returned JSON.
+        # Using the official bulk JSON API endpoint for high-speed, complete crawling.
+        # This retrieves price, shares count, investor count, and portfolio size in bulk
+        # for all funds in the requested date range, avoiding the slow 1000-fund loop.
         info_schema = InfoSchema(many=True)
         frames = []
 
-        # determine the months-back period required by the new API
-        period_months = _months_back(start_date_initial)
+        # Split the requested date range into en fazla 28-day chunks to respect TEFAS API limits
+        chunks = []
+        cur = start_date_initial
+        while cur <= end_date_initial:
+            chunk_end = min(cur + timedelta(days=27), end_date_initial)
+            chunks.append((cur, chunk_end))
+            cur = chunk_end + timedelta(days=1)
 
-        # When callers previously requested data partitioned by FundType
-        # or UmbrellaFundType they expected a wide result. The new API
-        # returns per-fund series only, so we fetch fund codes and then
-        # request each fund's series.
-        codes = self._list_fund_codes(self.fon_type)
+        print(f"Crawl Progress: Fetching bulk general info in {len(chunks)} chunks...")
+        for i, (chunk_start, chunk_end) in enumerate(chunks, 1):
+            body = {
+                "fonTipi": self.fon_type,  # "YAT"
+                "fonKodu": None,
+                "aramaMetni": None,
+                "fonTurKod": None,
+                "fonGrubu": None,
+                "sfonTurKod": None,
+                "fonTurAciklama": None,
+                "kurucuKod": None,
+                "basTarih": chunk_start.strftime("%Y%m%d"),
+                "bitTarih": chunk_end.strftime("%Y%m%d"),
+                "basSira": 1,
+                "bitSira": 100000,
+                "dil": "TR",
+                "sFonTurKod": "",
+                "fonKod": "",
+                "fonGrup": "",
+                "fonUnvanTip": "",
+            }
 
-        print(f"Crawl Progress: Fetching price series for {min(1000, len(codes))} funds...")
-        for i, code in enumerate(codes[:1000], 1):
-            payload = {"fonKodu": code, "dil": "TR", "periyod": period_months}
-            raw = self._do_post(payload)
-            time.sleep(0.05)  # Avoid hammering the server and getting rate limited/blocked
-            if not raw:
+            if not hasattr(self, 'session') or self.session is None:
+                self.__init__()
+
+            # Robust retry loop with exponential backoff for rate limit (429) and transient errors
+            max_retries = 5
+            backoff_factor = 2
+            delay = 5  # Start with 5 seconds wait
+            rows = []
+            
+            for retry in range(1, max_retries + 1):
+                try:
+                    response = self.session.post(
+                        url=f"{self.root_url}/api/funds/fonGnlBlgSiraliGetir",
+                        json=body,
+                        timeout=30,
+                    )
+                    
+                    if response.status_code == 429:
+                        print(f"   [-] Rate limit (429) hit on chunk {i}. Retrying {retry}/{max_retries} after {delay}s...")
+                        time.sleep(delay)
+                        delay *= backoff_factor
+                        continue
+                        
+                    response.raise_for_status()
+                    data = response.json()
+                    rows = data.get("resultList") or []
+                    break  # Success, exit retry loop
+                    
+                except Exception as e:
+                    if retry == max_retries:
+                        print(f"   [-] Error fetching chunk {i} after {max_retries} attempts: {e}")
+                    else:
+                        print(f"   [-] Error on chunk {i} (attempt {retry}): {e}. Retrying after {delay}s...")
+                        time.sleep(delay)
+                        delay *= backoff_factor
+
+            if not rows:
                 continue
+
             try:
-                rows = info_schema.load(raw)
-            except Exception:
+                parsed_rows = info_schema.load(rows)
+            except Exception as e:
+                print(f"   [-] Error parsing chunk {i}: {e}")
                 continue
-            frames.append(pd.DataFrame(rows, columns=info_schema.fields.keys()))
-            if i % 100 == 0 or i == len(codes[:1000]):
-                print(f"   [+] Processed {i}/{min(1000, len(codes))} funds...")
+
+            df_chunk = pd.DataFrame(parsed_rows, columns=info_schema.fields.keys())
+            frames.append(df_chunk)
+            print(f"   [+] Processed chunk {i}/{len(chunks)}: {len(df_chunk)} records.")
+            time.sleep(0.5)  # Respect rate limiting between chunks
 
         if not frames:
             return pd.DataFrame()
@@ -677,6 +731,20 @@ def main():
             fetched_data['date'] = fetched_data['date'].dt.strftime('%Y-%m-%d')
             fetched_data.dropna()
             fetched_data = fetched_data.drop_duplicates(subset=['symbol', 'date'])
+
+            # Save the fund with the longest history to CSV for Streamlit display
+            try:
+                symbol_counts = fetched_data['symbol'].value_counts()
+                if not symbol_counts.empty:
+                    first_symbol = symbol_counts.idxmax()
+                    first_fund_df = fetched_data[fetched_data['symbol'] == first_symbol][['date', 'close', 'market_cap', 'number_of_shares', 'number_of_investors']].copy()
+                    first_fund_df.sort_values(by='date', ascending=True, inplace=True)
+                    os.makedirs("data", exist_ok=True)
+                    first_fund_df.to_csv("data/first_fund_prices.csv", index=False)
+                    print(f"   [+] Saved diagnostic fund ({first_symbol}) with longest history ({first_fund_df.shape[0]} rows) to data/first_fund_prices.csv")
+            except Exception as e:
+                print(f"Warning: Could not save first_fund_prices.csv: {e}")
+
 
             if use_postgres: 
                 engine = db_engine()
